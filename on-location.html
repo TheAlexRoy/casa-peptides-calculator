@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>On Location — Film & TV Filming Locations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0b12;
+      --header-bg: #08080f;
+      --card: #14141f;
+      --card2: #1c1c2a;
+      --border: #2a2a3d;
+      --border2: #3a3a52;
+      --gold: #f5a623;
+      --gold-dim: #c8841a;
+      --red: #e63946;
+      --text: #f0f0f5;
+      --text2: #a0a0be;
+      --text3: #606075;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.6);
+      --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
+      --header-h: 60px;
+      --transition: 0.2s ease;
+    }
+
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+
+    /* ── HEADER ── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+      height: var(--header-h);
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 0 16px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900; font-size: 18px; letter-spacing: -0.5px;
+      color: var(--text); white-space: nowrap; flex-shrink: 0;
+    }
+    .logo span { color: var(--gold); }
+    .logo-icon {
+      width: 32px; height: 32px; background: var(--gold); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+
+    #search-wrap {
+      flex: 1; max-width: 440px; position: relative;
+    }
+    #search-input {
+      width: 100%; height: 38px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 0 16px 0 38px;
+      color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color var(--transition);
+    }
+    #search-input:focus { border-color: var(--gold); }
+    #search-input::placeholder { color: var(--text3); }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text3); font-size: 14px; pointer-events: none;
+    }
+    #search-results {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); z-index: 999; display: none;
+    }
+    #search-results.visible { display: block; }
+    .search-result-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer;
+      transition: background var(--transition);
+    }
+    .search-result-item:hover { background: var(--border); }
+    .search-result-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .sri-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .sri-info { flex: 1; min-width: 0; }
+    .sri-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sri-sub { font-size: 11px; color: var(--text2); }
+
+    .header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 20px; border: none;
+      font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: all var(--transition); white-space: nowrap;
+    }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+    .btn-gold { background: var(--gold); color: #000; }
+    .btn-gold:hover { background: #f0b84a; }
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 50%; padding: 0;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text2); font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-icon:hover { border-color: var(--border2); color: var(--text); }
+    #user-btn.logged-in { background: var(--gold); border-color: var(--gold); color: #000; }
+
+    /* ── MAP ── */
+    #map {
+      position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
+      z-index: 100;
+    }
+    .leaflet-container { background: #0a0a14 !important; }
+    .leaflet-control-attribution { display: none !important; }
+    .leaflet-control-zoom a {
+      background: var(--card) !important; color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-control-zoom a:hover { background: var(--card2) !important; }
+
+    /* custom marker */
+    .loc-marker {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      transition: transform 0.15s ease;
+    }
+    .loc-marker:hover { transform: scale(1.2); }
+    .loc-marker.checked-in { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,166,35,0.3); }
+
+    /* ── MAP CONTROLS ── */
+    #locate-btn {
+      position: fixed; bottom: 24px; right: 16px; z-index: 800;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-sm); transition: all var(--transition);
+    }
+    #locate-btn:hover { background: var(--card2); border-color: var(--border2); }
+
+    #legend {
+      position: fixed; bottom: 24px; left: 16px; z-index: 800;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .legend-title { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── MODAL BASE ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; align-items: flex-end; justify-content: center;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.visible { opacity: 1; pointer-events: all; }
+    .modal-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    }
+    .modal-panel {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 560px; max-height: 88vh;
+      background: var(--card); border-radius: 20px 20px 0 0;
+      border: 1px solid var(--border); border-bottom: none;
+      overflow: hidden; display: flex; flex-direction: column;
+      transform: translateY(40px);
+      transition: transform 0.25s ease;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+    }
+    .modal-overlay.visible .modal-panel { transform: translateY(0); }
+    .modal-drag { width: 40px; height: 4px; border-radius: 2px; background: var(--border2); margin: 12px auto 0; flex-shrink: 0; }
+    .modal-body { overflow-y: auto; flex: 1; padding: 0 20px 32px; }
+    .modal-body::-webkit-scrollbar { width: 4px; }
+    .modal-body::-webkit-scrollbar-track { background: transparent; }
+    .modal-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .modal-close-btn {
+      position: absolute; top: 16px; right: 16px; z-index: 2;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--card2); border: 1px solid var(--border);
+      color: var(--text2); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+    }
+    .modal-close-btn:hover { background: var(--border); color: var(--text); }
+
+    /* ── LOCATION MODAL ── */
+    .loc-hero {
+      width: 100%; height: 200px; object-fit: cover;
+      background: var(--card2);
+    }
+    .loc-photo-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px; margin: 16px 0;
+    }
+    .loc-photo {
+      aspect-ratio: 4/3; background: var(--card2); border-radius: 6px;
+      overflow: hidden; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .loc-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .loc-photo.empty { color: var(--text3); font-size: 22px; }
+
+    .loc-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .loc-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px; line-height: 1.2; margin-bottom: 4px; }
+    .loc-address { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
+    .loc-movie { font-size: 14px; color: var(--text); margin-bottom: 6px; }
+    .loc-movie strong { color: var(--gold); }
+    .loc-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+
+    .loc-stats { display: flex; gap: 16px; margin-bottom: 20px; }
+    .loc-stat { text-align: center; }
+    .loc-stat-val { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 20px; color: var(--gold); }
+    .loc-stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .also-in { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+    .also-in strong { color: var(--text); }
+
+    .checkin-btn {
+      width: 100%; height: 48px; border-radius: 24px;
+      background: var(--gold); border: none;
+      color: #000; font-size: 15px; font-weight: 700; font-family: 'Montserrat', sans-serif;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all var(--transition);
+    }
+    .checkin-btn:hover { background: #f0b84a; transform: translateY(-1px); }
+    .checkin-btn.done {
+      background: var(--card2); color: var(--gold); border: 1px solid var(--gold);
+      cursor: default;
+    }
+    .checkin-btn.done:hover { transform: none; }
+    .checkin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .guest-prompt {
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+      text-align: center; margin-bottom: 8px;
+    }
+    .guest-prompt p { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+
+    /* ── PROFILE DRAWER ── */
+    #profile-drawer {
+      position: fixed; top: var(--header-h); right: 0; bottom: 0;
+      width: 320px; z-index: 950;
+      background: var(--card); border-left: 1px solid var(--border);
+      transform: translateX(100%); transition: transform 0.3s ease;
+      display: flex; flex-direction: column;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+    }
+    #profile-drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .drawer-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px; }
+    .drawer-body { overflow-y: auto; flex: 1; padding: 20px; }
+    .drawer-body::-webkit-scrollbar { width: 4px; }
+    .drawer-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .avatar-lg {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--gold); color: #000;
+      font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .profile-name { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px; text-align: center; margin-bottom: 4px; }
+    .profile-email { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 20px; }
+
+    .stars-display {
+      background: var(--card2); border-radius: var(--radius); padding: 16px;
+      text-align: center; margin-bottom: 16px;
+    }
+    .stars-count { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 48px; color: var(--gold); line-height: 1; }
+    .stars-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+    .progress-wrap { margin-top: 12px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.5s ease; }
+
+    .section-title-sm {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text3); margin-bottom: 12px; margin-top: 20px;
+    }
+
+    .badges-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .badge-item {
+      aspect-ratio: 1; border-radius: 10px;
+      background: var(--card2); border: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; cursor: pointer; position: relative;
+      transition: all var(--transition);
+    }
+    .badge-item.earned { border-color: var(--gold); background: rgba(245,166,35,0.08); }
+    .badge-item.earned:hover { transform: scale(1.05); }
+    .badge-item.locked { opacity: 0.35; }
+    .badge-item.secret { filter: blur(4px); opacity: 0.6; pointer-events: none; }
+    .badge-icon { font-size: 22px; }
+    .badge-name { font-size: 8px; font-weight: 600; color: var(--text2); text-align: center; line-height: 1.2; padding: 0 2px; }
+    .badge-check {
+      position: absolute; top: -4px; right: -4px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--gold); color: #000; font-size: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .checkin-history { display: flex; flex-direction: column; gap: 8px; }
+    .history-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card2); border-radius: var(--radius-sm);
+      padding: 10px; cursor: pointer; transition: background var(--transition);
+    }
+    .history-item:hover { background: var(--border); }
+    .history-dot { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .history-info { flex: 1; min-width: 0; }
+    .history-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .history-movie { font-size: 11px; color: var(--text2); }
+    .history-star { color: var(--gold); font-size: 13px; }
+
+    .signout-btn {
+      width: 100%; margin-top: 24px; padding: 10px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text2);
+      font-size: 13px; cursor: pointer; transition: all var(--transition);
+    }
+    .signout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── AUTH MODAL ── */
+    #auth-modal .modal-panel {
+      max-height: 80vh; border-radius: 20px 20px 0 0;
+    }
+    .auth-tabs { display: flex; margin: 16px 20px 0; gap: 4px; }
+    .auth-tab {
+      flex: 1; padding: 10px; border-radius: var(--radius-sm);
+      border: none; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: all var(--transition);
+      background: transparent; color: var(--text3);
+    }
+    .auth-tab.active { background: var(--gold); color: #000; }
+
+    .auth-form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+    .form-input {
+      height: 44px; background: var(--card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0 14px;
+      color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color var(--transition);
+    }
+    .form-input:focus { border-color: var(--gold); }
+    .form-input::placeholder { color: var(--text3); }
+
+    .payment-box {
+      background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.3);
+      border-radius: var(--radius-sm); padding: 12px;
+    }
+    .payment-box-title { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .payment-box p { font-size: 12px; color: var(--text2); line-height: 1.5; }
+    .card-row { display: grid; grid-template-columns: 1fr 80px 80px; gap: 8px; }
+
+    .auth-submit {
+      height: 48px; border-radius: 24px; border: none;
+      background: var(--gold); color: #000;
+      font-size: 15px; font-weight: 700; font-family: 'Montserrat', sans-serif;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .auth-submit:hover { background: #f0b84a; }
+    .auth-note { font-size: 11px; color: var(--text3); text-align: center; line-height: 1.5; }
+    .auth-error { color: var(--red); font-size: 12px; text-align: center; display: none; }
+    .auth-error.visible { display: block; }
+
+    /* ── TOAST ── */
+    #achievement-toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+      z-index: 2000;
+      background: var(--card2); border: 1px solid var(--gold);
+      border-radius: var(--radius); padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 0 0 4px rgba(245,166,35,0.15), var(--shadow);
+      opacity: 0; pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      min-width: 280px;
+    }
+    #achievement-toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    .toast-icon { font-size: 32px; flex-shrink: 0; }
+    .toast-text {}
+    .toast-sub { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); font-weight: 700; }
+    .toast-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 16px; }
+    .toast-desc { font-size: 12px; color: var(--text2); }
+
+    /* ── BADGE DETAIL MODAL ── */
+    #badge-modal .modal-panel { max-height: 50vh; }
+    .badge-detail { text-align: center; padding: 20px; }
+    .badge-detail-icon { font-size: 56px; margin-bottom: 12px; }
+    .badge-detail-name { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px; margin-bottom: 8px; }
+    .badge-detail-req { font-size: 13px; color: var(--gold); margin-bottom: 12px; font-weight: 600; }
+    .badge-detail-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+    /* ── FILTER PILL ── */
+    .filter-pills { position: fixed; top: calc(var(--header-h) + 10px); left: 50%; transform: translateX(-50%); z-index: 800; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; pointer-events: none; }
+    .filter-pill {
+      padding: 6px 12px; border-radius: 20px;
+      background: var(--card); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--text2);
+      cursor: pointer; pointer-events: all; transition: all var(--transition);
+    }
+    .filter-pill.active { background: var(--gold); border-color: var(--gold); color: #000; }
+    .filter-pill:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+    /* ── CHECKIN STAR BURST ── */
+    @keyframes star-pop { 0%{transform:scale(0) rotate(-20deg);opacity:0} 60%{transform:scale(1.3) rotate(5deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
+    .star-burst { animation: star-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both; display: inline-block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 540px) {
+      #profile-drawer { width: 100%; }
+      .logo-text { display: none; }
+      #search-wrap { max-width: none; }
+    }
+    @media (max-width: 400px) {
+      .badges-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .hidden { display: none !important; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header id="header">
+  <div class="logo">
+    <div class="logo-icon">🎬</div>
+    <span class="logo-text">On <span>Location</span></span>
+  </div>
+
+  <div id="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input id="search-input" type="text" placeholder="Search films, shows, or locations…" autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+
+  <div class="header-right">
+    <button id="user-btn" class="btn btn-ghost" onclick="handleUserBtn()">Sign In</button>
+  </div>
+</header>
+
+<!-- ─── MAP ─── -->
+<div id="map"></div>
+
+<!-- ─── FILTER PILLS ─── -->
+<div class="filter-pills" id="filter-pills">
+  <button class="filter-pill active" data-filter="all" onclick="setFilter(this,'all')">All</button>
+  <button class="filter-pill" data-filter="sci-fi" onclick="setFilter(this,'sci-fi')">Sci-Fi</button>
+  <button class="filter-pill" data-filter="fantasy" onclick="setFilter(this,'fantasy')">Fantasy</button>
+  <button class="filter-pill" data-filter="action" onclick="setFilter(this,'action')">Action</button>
+  <button class="filter-pill" data-filter="drama" onclick="setFilter(this,'drama')">Drama</button>
+  <button class="filter-pill" data-filter="adventure" onclick="setFilter(this,'adventure')">Adventure</button>
+</div>
+
+<!-- ─── LOCATE BTN ─── -->
+<button id="locate-btn" title="My Location" onclick="locateMe()">📍</button>
+
+<!-- ─── LEGEND ─── -->
+<div id="legend">
+  <div class="legend-title">Genre</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#9b5de5"></div>Fantasy</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00b4d8"></div>Sci-Fi</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f72585"></div>Action</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div>Drama</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#06d6a0"></div>Adventure</div>
+</div>
+
+<!-- ─── LOCATION MODAL ─── -->
+<div class="modal-overlay" id="location-modal">
+  <div class="modal-backdrop" onclick="closeLocationModal()"></div>
+  <div class="modal-panel">
+    <div class="modal-drag"></div>
+    <button class="modal-close-btn" onclick="closeLocationModal()">✕</button>
+    <div class="modal-body" id="location-modal-body"></div>
+  </div>
+</div>
+
+<!-- ─── PROFILE DRAWER ─── -->
+<div id="profile-drawer">
+  <div class="drawer-header">
+    <span class="drawer-title">My Profile</span>
+    <button class="btn-icon btn" onclick="closeProfile()" style="font-size:13px">✕</button>
+  </div>
+  <div class="drawer-body" id="profile-body"></div>
+</div>
+
+<!-- ─── AUTH MODAL ─── -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal-backdrop" onclick="closeAuth()"></div>
+  <div class="modal-panel">
+    <div class="modal-drag"></div>
+    <button class="modal-close-btn" onclick="closeAuth()">✕</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="auth-tab" id="tab-create" onclick="switchAuthTab('create')">Create Account</button>
+    </div>
+    <div class="modal-body" style="padding-top:0">
+      <!-- Sign In Form -->
+      <form class="auth-form" id="signin-form" onsubmit="handleSignIn(event)">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="si-email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="si-pass" placeholder="••••••••" required>
+        </div>
+        <div class="auth-error" id="si-error">Invalid email or password.</div>
+        <button type="submit" class="auth-submit">Sign In</button>
+        <p class="auth-note">Don't have an account? <a href="#" onclick="switchAuthTab('create');return false;" style="color:var(--gold)">Create one for $2.99</a></p>
+      </form>
+      <!-- Create Account Form -->
+      <form class="auth-form" id="create-form" style="display:none" onsubmit="handleCreateAccount(event)">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" type="text" id="ca-name" placeholder="Your name" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="ca-email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="ca-pass" placeholder="Create a password" required minlength="6">
+        </div>
+        <div class="payment-box">
+          <div class="payment-box-title">💳 One-Time Account Fee — $2.99</div>
+          <p>Unlock check-ins, stars, and achievement badges. One payment, lifetime access. No subscription.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Card Number</label>
+          <input class="form-input" type="text" id="ca-card" placeholder="1234 5678 9012 3456" maxlength="19" required>
+        </div>
+        <div class="card-row">
+          <div class="form-group">
+            <label class="form-label">Expiry</label>
+            <input class="form-input" type="text" id="ca-exp" placeholder="MM/YY" maxlength="5" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVC</label>
+            <input class="form-input" type="text" id="ca-cvc" placeholder="123" maxlength="3" required>
+          </div>
+        </div>
+        <div class="auth-error" id="ca-error">Please check your details and try again.</div>
+        <button type="submit" class="auth-submit" id="ca-submit">Pay $2.99 &amp; Create Account</button>
+        <p class="auth-note">Secure, encrypted payment. By creating an account you agree to our Terms &amp; Privacy Policy.</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ─── BADGE DETAIL MODAL ─── -->
+<div class="modal-overlay" id="badge-modal">
+  <div class="modal-backdrop" onclick="closeBadgeModal()"></div>
+  <div class="modal-panel">
+    <div class="modal-drag"></div>
+    <button class="modal-close-btn" onclick="closeBadgeModal()">✕</button>
+    <div class="modal-body">
+      <div class="badge-detail" id="badge-detail-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ACHIEVEMENT TOAST ─── -->
+<div id="achievement-toast">
+  <div class="toast-icon" id="toast-icon">🎬</div>
+  <div class="toast-text">
+    <div class="toast-sub">Achievement Unlocked</div>
+    <div class="toast-title" id="toast-title">First Take</div>
+    <div class="toast-desc" id="toast-desc">You visited your first location!</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+// DATA — ACHIEVEMENTS
+// ═══════════════════════════════════════════════════════════════
+const ACHIEVEMENTS = [
+  {
+    id: 'first-take',
+    name: 'First Take',
+    icon: '🎬',
+    req: { type: 'stars', n: 1 },
+    desc: "You've visited your first filming location. Lights, camera, action!"
+  },
+  {
+    id: 'scene-stealer',
+    name: 'Scene Stealer',
+    icon: '⭐',
+    req: { type: 'stars', n: 5 },
+    desc: "5 locations visited. You're stealing every scene you step into."
+  },
+  {
+    id: 'supporting-role',
+    name: 'Supporting Role',
+    icon: '🎭',
+    req: { type: 'stars', n: 10 },
+    desc: "10 locations visited. A standout supporting performance in the film world."
+  },
+  {
+    id: 'cinematographer',
+    name: 'Cinematographer',
+    icon: '🎥',
+    req: { type: 'stars', n: 25 },
+    desc: "25 locations. You've got an eye for iconic shots and frames."
+  },
+  {
+    id: 'directors-cut',
+    name: "Director's Cut",
+    icon: '🎞️',
+    req: { type: 'stars', n: 50 },
+    desc: "50 locations visited. You're calling the shots on your own cinematic adventure."
+  },
+  {
+    id: 'box-office',
+    name: 'Box Office Hit',
+    icon: '🍿',
+    req: { type: 'stars', n: 100 },
+    desc: "100 locations visited. You're a worldwide sensation."
+  },
+  {
+    id: 'golden-reel',
+    name: 'Golden Reel',
+    icon: '🏅',
+    req: { type: 'stars', n: 150 },
+    desc: "150 locations. Your reel is pure gold and your passport is full."
+  },
+  {
+    id: 'silver-screen',
+    name: 'Silver Screen Legend',
+    icon: '🎖️',
+    req: { type: 'stars', n: 200 },
+    desc: "200 locations visited. A true legend of the silver screen."
+  },
+  {
+    id: 'hall-of-fame',
+    name: 'Hall of Fame',
+    icon: '🏆',
+    req: { type: 'stars', n: 300 },
+    desc: "300 locations. You've earned your star on the Walk of Fame."
+  },
+  {
+    id: 'world-traveler',
+    name: 'Around the World in 80 Films',
+    icon: '🌍',
+    req: { type: 'continents', n: 6 },
+    desc: "Checked in on every continent. A true global cinephile — the world is your set."
+  },
+  {
+    id: 'secret',
+    name: '???',
+    icon: '🔮',
+    req: { type: 'secret' },
+    desc: 'A mysterious badge shrouded in mystery. Keep exploring…',
+    isSecret: true
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// DATA — FILMING LOCATIONS
+// ═══════════════════════════════════════════════════════════════
+const CATEGORY_COLORS = {
+  'fantasy':   '#9b5de5',
+  'sci-fi':    '#00b4d8',
+  'action':    '#f72585',
+  'drama':     '#f5a623',
+  'adventure': '#06d6a0',
+  'horror':    '#c1121f',
+  'thriller':  '#4cc9f0'
+};
+
+const LOCATIONS = [
+  {
+    id: 'griffith-observatory',
+    title: 'Griffith Observatory',
+    movie: 'La La Land',
+    year: 2016,
+    alsoSeen: ['Rebel Without a Cause', 'The Terminator', 'Transformers: Dark of the Moon'],
+    category: 'drama',
+    lat: 34.1184, lng: -118.3004,
+    address: '2800 E Observatory Rd, Los Angeles, CA, USA',
+    continent: 'north_america',
+    desc: 'This Art Deco observatory atop Mount Hollywood is one of cinema\'s most enduring icons. Ryan Gosling and Emma Stone danced among the stars here in La La Land, and James Dean immortalized it in Rebel Without a Cause.',
+    verified: true,
+    imdbId: 'tt3783958',
+    checkins: 3421,
+    photos: ['griffith1','griffith2','griffith3']
+  },
+  {
+    id: 'grand-central',
+    title: 'Grand Central Terminal',
+    movie: 'The Avengers',
+    year: 2012,
+    alsoSeen: ['Men in Black', 'Madagascar', 'Revolutionary Road', 'Armageddon'],
+    category: 'action',
+    lat: 40.7527, lng: -73.9772,
+    address: '89 E 42nd St, New York City, NY, USA',
+    continent: 'north_america',
+    desc: 'New York\'s most cinematic train station has been a backdrop for countless blockbusters. The Avengers assembled here, and Agents J and K flashed their neuralyzers to its crowds in Men in Black.',
+    verified: true,
+    imdbId: 'tt0848228',
+    checkins: 5102,
+    photos: ['grandcentral1','grandcentral2','grandcentral3']
+  },
+  {
+    id: 'stanley-hotel',
+    title: 'The Stanley Hotel',
+    movie: 'The Shining',
+    year: 1980,
+    alsoSeen: ['Dumb and Dumber', 'Miniseries: The Shining (1997)'],
+    category: 'horror',
+    lat: 40.3772, lng: -105.5217,
+    address: '333 E Wonderview Ave, Estes Park, CO, USA',
+    continent: 'north_america',
+    desc: 'The haunted inspiration for Stephen King\'s Overlook Hotel. King stayed in room 217 in 1974 and was inspired to write The Shining. The 1997 TV miniseries filmed extensively on location here.',
+    verified: true,
+    imdbId: 'tt0081505',
+    checkins: 1876,
+    photos: ['stanley1','stanley2','stanley3']
+  },
+  {
+    id: 'monument-valley',
+    title: 'Monument Valley',
+    movie: 'Forrest Gump',
+    year: 1994,
+    alsoSeen: ["Stagecoach (1939)", "2001: A Space Odyssey", "Back to the Future III", 'The Lone Ranger'],
+    category: 'drama',
+    lat: 36.9986, lng: -110.0982,
+    address: 'Monument Valley Navajo Tribal Park, Arizona/Utah, USA',
+    continent: 'north_america',
+    desc: 'The sweeping red sandstone buttes of Monument Valley have defined the American West on film since John Ford first pointed his camera here in 1939. Forrest Gump ended his famous run on this very highway.',
+    verified: true,
+    imdbId: 'tt0109830',
+    checkins: 2244,
+    photos: ['monument1','monument2','monument3']
+  },
+  {
+    id: 'kings-cross',
+    title: "King's Cross — Platform 9¾",
+    movie: 'Harry Potter and the Philosopher\'s Stone',
+    year: 2001,
+    alsoSeen: ['All 8 Harry Potter films'],
+    category: 'fantasy',
+    lat: 51.5322, lng: -0.1240,
+    address: "King's Cross Station, London, UK",
+    continent: 'europe',
+    desc: "The magical departure point for Hogwarts. Wizarding students push their trolleys through the barrier between platforms 9 and 10. Today, King's Cross has a permanent Platform 9¾ installation for fans.",
+    verified: true,
+    imdbId: 'tt0241527',
+    checkins: 8834,
+    photos: ['kingscross1','kingscross2','kingscross3']
+  },
+  {
+    id: 'alnwick-castle',
+    title: 'Alnwick Castle',
+    movie: 'Harry Potter and the Philosopher\'s Stone',
+    year: 2001,
+    alsoSeen: ['Harry Potter and the Chamber of Secrets', 'Downton Abbey', 'Transformers: The Last Knight'],
+    category: 'fantasy',
+    lat: 55.4152, lng: -1.7062,
+    address: 'Alnwick, Northumberland, UK',
+    continent: 'europe',
+    desc: "Used as Hogwarts' exterior courtyards, Alnwick Castle served as the setting for Harry's first broomstick flying lesson. The castle's Inner Bailey doubled as the training courtyard in the early films.",
+    verified: true,
+    imdbId: 'tt0241527',
+    checkins: 3109,
+    photos: ['alnwick1','alnwick2','alnwick3']
+  },
+  {
+    id: 'dubrovnik',
+    title: 'Dubrovnik Old Town',
+    movie: 'Game of Thrones',
+    year: 2011,
+    alsoSeen: ['Star Wars: The Last Jedi', 'Robin Hood: Prince of Thieves'],
+    category: 'fantasy',
+    lat: 42.6414, lng: 18.1108,
+    address: 'Old Town, Dubrovnik, Croatia',
+    continent: 'europe',
+    desc: "Dubrovnik\'s ancient walls and limestone streets became King\'s Landing, the treacherous capital of Westeros. The city\'s Pile Gate, Fort Lovrijenac, and Stradun boulevard all starred in Game of Thrones across 8 seasons.",
+    verified: true,
+    imdbId: 'tt0944947',
+    checkins: 11420,
+    photos: ['dubrovnik1','dubrovnik2','dubrovnik3']
+  },
+  {
+    id: 'gorlitz',
+    title: 'Görlitz Town Hall & Kaufhaus',
+    movie: 'The Grand Budapest Hotel',
+    year: 2014,
+    alsoSeen: ['Inglourious Basterds', 'The Reader'],
+    category: 'drama',
+    lat: 51.1522, lng: 14.9870,
+    address: 'Untermarkt, Görlitz, Saxony, Germany',
+    continent: 'europe',
+    desc: "Wes Anderson transformed this perfectly preserved Art Nouveau department store into the fictional Grand Budapest Hotel. The city\'s ornate architecture made it the ideal canvas for Anderson\'s pastel-pink vision.",
+    verified: true,
+    imdbId: 'tt2278388',
+    checkins: 1987,
+    photos: ['gorlitz1','gorlitz2','gorlitz3']
+  },
+  {
+    id: 'bir-hakeim',
+    title: 'Pont de Bir-Hakeim',
+    movie: 'Inception',
+    year: 2010,
+    alsoSeen: ['Last Tango in Paris', 'Midnight in Paris'],
+    category: 'sci-fi',
+    lat: 48.8535, lng: 2.2893,
+    address: 'Pont de Bir-Hakeim, Paris, 15th/16th Arrondissement, France',
+    continent: 'europe',
+    desc: "This two-tiered bridge with its ornate iron columns is where Paris began to fold in on itself in Christopher Nolan\'s Inception. Dom Cobb explained the dream world to Ariadne as the city bent overhead.",
+    verified: true,
+    imdbId: 'tt1375666',
+    checkins: 4210,
+    photos: ['birhakeim1','birhakeim2','birhakeim3']
+  },
+  {
+    id: 'skellig-michael',
+    title: 'Skellig Michael',
+    movie: 'Star Wars: The Force Awakens',
+    year: 2015,
+    alsoSeen: ['Star Wars: The Last Jedi'],
+    category: 'sci-fi',
+    lat: 51.7734, lng: -10.5389,
+    address: 'Skellig Michael, County Kerry, Ireland',
+    continent: 'europe',
+    desc: "This UNESCO-listed island monastery off the Kerry coast became Ahch-To — Luke Skywalker\'s remote hideout. The ancient stone beehive huts built by monks in the 6th century stood in as Jedi temple ruins.",
+    verified: true,
+    imdbId: 'tt2488496',
+    checkins: 2033,
+    photos: ['skellig1','skellig2','skellig3']
+  },
+  {
+    id: 'angkor-wat',
+    title: 'Angkor Wat',
+    movie: 'Lara Croft: Tomb Raider',
+    year: 2001,
+    alsoSeen: ['Two Brothers (2004)', 'In the Mood for Love'],
+    category: 'adventure',
+    lat: 13.4125, lng: 103.8670,
+    address: 'Angkor, Siem Reap Province, Cambodia',
+    continent: 'asia',
+    desc: "The world\'s largest religious monument became the jungle temple where Lara Croft discovered the first piece of the Triangle of Light. Angelina Jolie explored Ta Prohm\'s tree-enveloped ruins in the iconic opening sequence.",
+    verified: true,
+    imdbId: 'tt0146316',
+    checkins: 3567,
+    photos: ['angkor1','angkor2','angkor3']
+  },
+  {
+    id: 'park-hyatt-tokyo',
+    title: 'Park Hyatt Tokyo — New York Bar',
+    movie: 'Lost in Translation',
+    year: 2003,
+    alsoSeen: ['Tokyo Sonata', 'various music videos'],
+    category: 'drama',
+    lat: 35.6859, lng: 139.6907,
+    address: '3-7-1-2 Nishi-Shinjuku, Shinjuku, Tokyo, Japan',
+    continent: 'asia',
+    desc: "Sofia Coppola\'s lonely masterpiece was filmed almost entirely at the Park Hyatt Tokyo. The hotel\'s New York Bar on the 52nd floor is where Bob Harris and Charlotte found unexpected connection amid the Tokyo haze.",
+    verified: true,
+    imdbId: 'tt0335266',
+    checkins: 2876,
+    photos: ['tokyo1','tokyo2','tokyo3']
+  },
+  {
+    id: 'petra',
+    title: 'Treasury of Petra (Al-Khazneh)',
+    movie: 'Indiana Jones and the Last Crusade',
+    year: 1989,
+    alsoSeen: ['Transformers: Revenge of the Fallen', 'The Mummy Returns'],
+    category: 'adventure',
+    lat: 30.3285, lng: 35.4444,
+    address: 'Petra, Maan Governorate, Jordan',
+    continent: 'asia',
+    desc: "The iconic rose-red Treasury carved into Jordanian rock became the Holy Grail\'s resting place in Spielberg\'s adventure classic. Indiana Jones and his father rode through the Siq to discover the Canyon of the Crescent Moon.",
+    verified: true,
+    imdbId: 'tt0097576',
+    checkins: 5441,
+    photos: ['petra1','petra2','petra3']
+  },
+  {
+    id: 'wadi-rum',
+    title: 'Wadi Rum Desert',
+    movie: 'The Martian',
+    year: 2015,
+    alsoSeen: ['Dune (2021)', 'Lawrence of Arabia', 'Rogue One: A Star Wars Story'],
+    category: 'sci-fi',
+    lat: 29.5767, lng: 35.4241,
+    address: 'Wadi Rum Protected Area, Aqaba Governorate, Jordan',
+    continent: 'asia',
+    desc: "Jordan\'s rust-red valley doubles as Mars in The Martian, and as Arrakis in Denis Villeneuve\'s Dune. The alien landscape of towering sandstone formations has made it the go-to stand-in for other worlds.",
+    verified: true,
+    imdbId: 'tt3659388',
+    checkins: 2198,
+    photos: ['wadirum1','wadirum2','wadirum3']
+  },
+  {
+    id: 'hobbiton',
+    title: 'Hobbiton Movie Set',
+    movie: 'The Lord of the Rings: The Fellowship of the Ring',
+    year: 2001,
+    alsoSeen: ['The Lord of the Rings trilogy', 'The Hobbit trilogy'],
+    category: 'fantasy',
+    lat: -37.8723, lng: 175.6820,
+    address: 'Hinuera Valley, Matamata, Waikato, New Zealand',
+    continent: 'oceania',
+    desc: "The Shire\'s rolling green hills and round doors were built on a sheep farm in New Zealand\'s Waikato region. Alexander Farm was transformed into Bag End and the Hobbiton movie set, now a permanent tourist destination.",
+    verified: true,
+    imdbId: 'tt0120737',
+    checkins: 9033,
+    photos: ['hobbiton1','hobbiton2','hobbiton3']
+  },
+  {
+    id: 'sydney-opera',
+    title: 'Sydney Opera House',
+    movie: 'Mission: Impossible II',
+    year: 2000,
+    alsoSeen: ['Finding Nemo', 'The Matrix Revolutions', 'Moulin Rouge!'],
+    category: 'action',
+    lat: -33.8568, lng: 151.2153,
+    address: 'Bennelong Point, Sydney NSW 2000, Australia',
+    continent: 'oceania',
+    desc: "Jørn Utzon\'s sail-like masterpiece has appeared in dozens of films as the definitive symbol of Australia. Tom Cruise rappelled in its vicinity in Mission: Impossible II, and Nemo was found just offshore.",
+    verified: true,
+    imdbId: 'tt0120755',
+    checkins: 4882,
+    photos: ['sydney1','sydney2','sydney3']
+  },
+  {
+    id: 'ait-benhaddou',
+    title: 'Aït Benhaddou Kasbah',
+    movie: 'Gladiator',
+    year: 2000,
+    alsoSeen: ['Game of Thrones (Yunkai)', 'The Mummy', 'Lawrence of Arabia', 'Babel'],
+    category: 'action',
+    lat: 31.0472, lng: -7.1308,
+    address: 'Aït Benhaddou, Ouarzazate Province, Morocco',
+    continent: 'africa',
+    desc: "This UNESCO World Heritage earthen fortress on the ancient caravan route became the slave city of Zucchabar in Gladiator, and the walled city of Yunkai in Game of Thrones. Over 30 major productions have filmed here.",
+    verified: true,
+    imdbId: 'tt0172495',
+    checkins: 3129,
+    photos: ['morocco1','morocco2','morocco3']
+  },
+  {
+    id: 'sossusvlei',
+    title: 'Sossusvlei Dunes',
+    movie: 'Mad Max: Fury Road',
+    year: 2015,
+    alsoSeen: ['The Cell', 'Dust Devil'],
+    category: 'action',
+    lat: -24.7274, lng: 15.2751,
+    address: 'Namib-Naukluft National Park, Namibia',
+    continent: 'africa',
+    desc: "The Namibian desert\'s towering rust-colored dunes — some reaching 300 meters — became the post-apocalyptic wasteland of Fury Road. George Miller chose this location for its otherworldly scale and cinematic desolation.",
+    verified: true,
+    imdbId: 'tt1392190',
+    checkins: 1654,
+    photos: ['namibia1','namibia2','namibia3']
+  },
+  {
+    id: 'uyuni',
+    title: 'Salar de Uyuni',
+    movie: 'Star Wars: The Last Jedi',
+    year: 2017,
+    alsoSeen: ['Quantico (TV)', 'various commercials'],
+    category: 'sci-fi',
+    lat: -20.1338, lng: -67.4891,
+    address: 'Salar de Uyuni, Potosí Department, Bolivia',
+    continent: 'south_america',
+    desc: "The world\'s largest salt flat — 10,582 square kilometers at 3,656 meters altitude — became the mineral planet Crait in The Last Jedi. The scarlet salt crust beneath the white surface created the iconic blood-red speedbike trails.",
+    verified: true,
+    imdbId: 'tt2527338',
+    checkins: 2761,
+    photos: ['uyuni1','uyuni2','uyuni3']
+  },
+  {
+    id: 'machu-picchu',
+    title: 'Machu Picchu',
+    movie: 'Motorcycle Diaries',
+    year: 2004,
+    alsoSeen: ['Paddington 2', 'various documentaries'],
+    category: 'drama',
+    lat: -13.1631, lng: -72.5450,
+    address: 'Aguas Calientes, Urubamba Province, Peru',
+    continent: 'south_america',
+    desc: "The Inca citadel hidden in the Andean clouds has been filmed countless times. Walter Salles captured Che Guevara\'s awestruck arrival here in The Motorcycle Diaries, cementing it as cinema\'s quintessential South American icon.",
+    verified: true,
+    imdbId: 'tt0318462',
+    checkins: 4023,
+    photos: ['machu1','machu2','machu3']
+  },
+  {
+    id: 'christ-redeemer',
+    title: 'Christ the Redeemer',
+    movie: '2012',
+    year: 2009,
+    alsoSeen: ['Fast Five', 'Rio (animated)', 'Moonraker'],
+    category: 'action',
+    lat: -22.9519, lng: -43.2105,
+    address: 'Corcovado Mountain, Rio de Janeiro, Brazil',
+    continent: 'south_america',
+    desc: "The iconic Art Deco statue watching over Rio de Janeiro has been spectacularly destroyed in Roland Emmerich\'s disaster epic 2012 and served as the backdrop for countless chase sequences in the Fast & Furious franchise.",
+    verified: true,
+    imdbId: 'tt1190080',
+    checkins: 6177,
+    photos: ['rio1','rio2','rio3']
+  },
+  {
+    id: 'fjadrargljufur',
+    title: 'Fjaðrárgljúfur Canyon',
+    movie: 'Game of Thrones',
+    year: 2017,
+    alsoSeen: ['Interstellar (nearby areas)', 'various music videos'],
+    category: 'fantasy',
+    lat: 63.7731, lng: -17.9922,
+    address: 'Fjaðrárgljúfur, Southern Region, Iceland',
+    continent: 'europe',
+    desc: "This dramatic canyon carved by glacial floods became Beyond the Wall in Game of Thrones. Jon Snow and the Brotherhood marched through its frozen otherworldly walls, and the location has become a pilgrimage site for fans.",
+    verified: true,
+    imdbId: 'tt0944947',
+    checkins: 1834,
+    photos: ['iceland1','iceland2','iceland3']
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let state = {
+  user: null,
+  map: null,
+  markers: {},
+  activeFilter: 'all',
+  currentLocation: null,
+  prevBadgeCount: 0
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('on_location_user');
+    if (saved) state.user = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveState() {
+  if (state.user) {
+    localStorage.setItem('on_location_user', JSON.stringify(state.user));
+  } else {
+    localStorage.removeItem('on_location_user');
+  }
+}
+
+function ensureUser() {
+  if (!state.user) {
+    openAuth('signin');
+    return false;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════════════════════
+function initMap() {
+  state.map = L.map('map', {
+    center: [20, 0],
+    zoom: 3,
+    zoomControl: true,
+    minZoom: 2,
+    maxZoom: 16
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(state.map);
+
+  LOCATIONS.forEach(addMarker);
+}
+
+function markerColor(loc) {
+  return CATEGORY_COLORS[loc.category] || '#888';
+}
+
+function addMarker(loc) {
+  const color = markerColor(loc);
+  const emoji = categoryEmoji(loc.category);
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="loc-marker ${hasCheckedIn(loc.id) ? 'checked-in' : ''}" style="background:${color}" data-id="${loc.id}">${emoji}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+
+  const marker = L.marker([loc.lat, loc.lng], { icon })
+    .addTo(state.map)
+    .on('click', () => openLocationModal(loc.id));
+
+  state.markers[loc.id] = marker;
+}
+
+function categoryEmoji(cat) {
+  const map = {
+    fantasy: '✨', 'sci-fi': '🚀', action: '💥',
+    drama: '🎭', adventure: '🗺️', horror: '👻', thriller: '🔍'
+  };
+  return map[cat] || '📍';
+}
+
+function refreshMarkers() {
+  LOCATIONS.forEach(loc => {
+    const color = markerColor(loc);
+    const emoji = categoryEmoji(loc.category);
+    const el = document.querySelector(`.loc-marker[data-id="${loc.id}"]`);
+    if (el) {
+      if (hasCheckedIn(loc.id)) el.classList.add('checked-in');
+      else el.classList.remove('checked-in');
+    }
+  });
+}
+
+function setFilter(btn, filter) {
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  state.activeFilter = filter;
+
+  LOCATIONS.forEach(loc => {
+    const marker = state.markers[loc.id];
+    if (!marker) return;
+    if (filter === 'all' || loc.category === filter) {
+      state.map.addLayer(marker);
+    } else {
+      state.map.removeLayer(marker);
+    }
+  });
+}
+
+function locateMe() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.map.flyTo([pos.coords.latitude, pos.coords.longitude], 10, { duration: 1.5 });
+  }, () => {
+    alert('Location access denied or unavailable.');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOCATION MODAL
+// ═══════════════════════════════════════════════════════════════
+function openLocationModal(id) {
+  const loc = LOCATIONS.find(l => l.id === id);
+  if (!loc) return;
+  state.currentLocation = loc;
+
+  const color = markerColor(loc);
+  const checkedIn = hasCheckedIn(loc.id);
+
+  const photosHtml = loc.photos.map(seed =>
+    `<div class="loc-photo"><img src="https://picsum.photos/seed/${seed}/400/300" alt="" loading="lazy" onerror="this.parentElement.innerHTML='📷'"></div>`
+  ).join('');
+
+  const alsoHtml = loc.alsoSeen && loc.alsoSeen.length
+    ? `<p class="also-in"><strong>Also seen in:</strong> ${loc.alsoSeen.join(', ')}</p>` : '';
+
+  let checkinSection;
+  if (!state.user) {
+    checkinSection = `
+      <div class="guest-prompt">
+        <p>Sign in or create an account to check in and earn ⭐ stars.</p>
+        <button class="btn btn-gold" onclick="openAuth('signin')" style="width:100%">Sign In / Create Account</button>
+      </div>`;
+  } else if (checkedIn) {
+    checkinSection = `<button class="checkin-btn done">✅ Checked In — ⭐ Star Earned</button>`;
+  } else {
+    checkinSection = `<button class="checkin-btn" onclick="doCheckIn('${loc.id}')">📍 Check In — Earn a ⭐ Star</button>`;
+  }
+
+  const body = `
+    <div class="loc-badge" style="background:${color}22;color:${color}">
+      ${categoryEmoji(loc.category)} ${loc.category.toUpperCase()}
+    </div>
+    <h2 class="loc-title">${loc.title}</h2>
+    <p class="loc-address">📍 ${loc.address}</p>
+    <p class="loc-movie">Featured in <strong>${loc.movie}</strong> (${loc.year})</p>
+    <div class="loc-stats">
+      <div class="loc-stat">
+        <div class="loc-stat-val">${loc.checkins.toLocaleString()}</div>
+        <div class="loc-stat-lbl">Check-ins</div>
+      </div>
+      <div class="loc-stat">
+        <div class="loc-stat-val">${loc.alsoSeen ? loc.alsoSeen.length + 1 : 1}</div>
+        <div class="loc-stat-lbl">Productions</div>
+      </div>
+      <div class="loc-stat">
+        <div class="loc-stat-val">✅</div>
+        <div class="loc-stat-lbl">IMDb Verified</div>
+      </div>
+    </div>
+    <p class="loc-desc">${loc.desc}</p>
+    ${alsoHtml}
+    <div class="loc-photo-grid">${photosHtml}</div>
+    ${checkinSection}
+  `;
+
+  document.getElementById('location-modal-body').innerHTML = body;
+  document.getElementById('location-modal').classList.add('visible');
+}
+
+function closeLocationModal() {
+  document.getElementById('location-modal').classList.remove('visible');
+  state.currentLocation = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHECK-IN
+// ═══════════════════════════════════════════════════════════════
+function hasCheckedIn(id) {
+  return state.user && state.user.checkedIn && state.user.checkedIn.includes(id);
+}
+
+function doCheckIn(id) {
+  if (!ensureUser()) return;
+  if (hasCheckedIn(id)) return;
+
+  const loc = LOCATIONS.find(l => l.id === id);
+  if (!loc) return;
+
+  state.user.checkedIn = state.user.checkedIn || [];
+  state.user.checkedIn.push(id);
+  state.user.stars = (state.user.stars || 0) + 1;
+
+  const continents = new Set((state.user.checkedIn || []).map(cid => {
+    const l = LOCATIONS.find(x => x.id === cid);
+    return l ? l.continent : null;
+  }).filter(Boolean));
+  state.user.continents = [...continents];
+
+  saveState();
+  refreshMarkers();
+
+  // Re-render modal with updated state
+  openLocationModal(id);
+
+  // Check achievements
+  checkAchievements();
+  updateHeader();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACHIEVEMENTS
+// ═══════════════════════════════════════════════════════════════
+function getEarnedBadges() {
+  if (!state.user) return [];
+  const stars = state.user.stars || 0;
+  const continents = (state.user.continents || []).length;
+  return ACHIEVEMENTS.filter(a => {
+    if (a.isSecret) return false;
+    if (a.req.type === 'stars') return stars >= a.req.n;
+    if (a.req.type === 'continents') return continents >= a.req.n;
+    return false;
+  });
+}
+
+function checkAchievements() {
+  const earned = getEarnedBadges();
+  if (earned.length > state.prevBadgeCount) {
+    const newest = earned[earned.length - 1];
+    showAchievementToast(newest);
+    state.prevBadgeCount = earned.length;
+  }
+}
+
+function showAchievementToast(badge) {
+  const toast = document.getElementById('achievement-toast');
+  document.getElementById('toast-icon').textContent = badge.icon;
+  document.getElementById('toast-title').textContent = badge.name;
+  document.getElementById('toast-desc').textContent = badge.desc;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════════════
+function initSearch() {
+  const input = document.getElementById('search-input');
+  const results = document.getElementById('search-results');
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 2) { results.classList.remove('visible'); return; }
+
+    const matches = LOCATIONS.filter(l =>
+      l.title.toLowerCase().includes(q) ||
+      l.movie.toLowerCase().includes(q) ||
+      (l.alsoSeen || []).some(m => m.toLowerCase().includes(q)) ||
+      l.address.toLowerCase().includes(q)
+    ).slice(0, 6);
+
+    if (!matches.length) { results.classList.remove('visible'); return; }
+
+    results.innerHTML = matches.map(l => `
+      <div class="search-result-item" onclick="flyToLocation('${l.id}')">
+        <div class="sri-dot" style="background:${markerColor(l)}"></div>
+        <div class="sri-info">
+          <div class="sri-title">${l.title}</div>
+          <div class="sri-sub">${l.movie} · ${l.address.split(',').slice(-2).join(',').trim()}</div>
+        </div>
+      </div>
+    `).join('');
+    results.classList.add('visible');
+  });
+
+  document.addEventListener('click', e => {
+    if (!document.getElementById('search-wrap').contains(e.target)) {
+      results.classList.remove('visible');
+    }
+  });
+}
+
+function flyToLocation(id) {
+  const loc = LOCATIONS.find(l => l.id === id);
+  if (!loc) return;
+  document.getElementById('search-results').classList.remove('visible');
+  document.getElementById('search-input').value = loc.title;
+  state.map.flyTo([loc.lat, loc.lng], 13, { duration: 1.5 });
+  setTimeout(() => openLocationModal(id), 800);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROFILE DRAWER
+// ═══════════════════════════════════════════════════════════════
+function openProfile() {
+  renderProfile();
+  document.getElementById('profile-drawer').classList.add('open');
+}
+
+function closeProfile() {
+  document.getElementById('profile-drawer').classList.remove('open');
+}
+
+function renderProfile() {
+  if (!state.user) return;
+  const u = state.user;
+  const stars = u.stars || 0;
+  const checkedIn = u.checkedIn || [];
+  const earned = getEarnedBadges();
+
+  // Progress to next badge
+  const upcoming = ACHIEVEMENTS.filter(a => !a.isSecret && !earned.find(e => e.id === a.id) && a.req.type === 'stars');
+  let progressHtml = '';
+  if (upcoming.length) {
+    const next = upcoming[0];
+    const prev = earned.filter(a => a.req.type === 'stars').reduce((m, a) => Math.max(m, a.req.n), 0);
+    const pct = Math.min(100, ((stars - prev) / (next.req.n - prev)) * 100);
+    progressHtml = `
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span>Next: ${next.name} ${next.icon}</span>
+          <span>${stars} / ${next.req.n} ⭐</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }
+
+  const badgesHtml = ACHIEVEMENTS.map(a => {
+    const isEarned = !!earned.find(e => e.id === a.id);
+    if (a.isSecret) {
+      return `<div class="badge-item secret" title="???"><div class="badge-icon">🔮</div><div class="badge-name">???</div></div>`;
+    }
+    return `
+      <div class="badge-item ${isEarned ? 'earned' : 'locked'}" onclick="openBadgeModal('${a.id}')" title="${a.name}">
+        <div class="badge-icon">${a.icon}</div>
+        <div class="badge-name">${a.name}</div>
+        ${isEarned ? '<div class="badge-check">✓</div>' : ''}
+      </div>`;
+  }).join('');
+
+  const historyHtml = checkedIn.slice().reverse().map(id => {
+    const loc = LOCATIONS.find(l => l.id === id);
+    if (!loc) return '';
+    return `
+      <div class="history-item" onclick="flyToLocation('${id}');closeProfile()">
+        <div class="history-dot" style="background:${markerColor(loc)}22">${categoryEmoji(loc.category)}</div>
+        <div class="history-info">
+          <div class="history-title">${loc.title}</div>
+          <div class="history-movie">${loc.movie}</div>
+        </div>
+        <div class="history-star">⭐</div>
+      </div>`;
+  }).join('') || `<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px 0">No check-ins yet. Start exploring!</p>`;
+
+  document.getElementById('profile-body').innerHTML = `
+    <div class="avatar-lg">${u.name.charAt(0).toUpperCase()}</div>
+    <div class="profile-name">${u.name}</div>
+    <div class="profile-email">${u.email}</div>
+
+    <div class="stars-display">
+      <div class="stars-count"><span class="star-burst">⭐</span> ${stars}</div>
+      <div class="stars-label">Total Stars Earned</div>
+      ${progressHtml}
+    </div>
+
+    <div class="section-title-sm">Achievement Badges (${earned.length} / 10)</div>
+    <div class="badges-grid">${badgesHtml}</div>
+
+    <div class="section-title-sm">Check-In History (${checkedIn.length})</div>
+    <div class="checkin-history">${historyHtml}</div>
+
+    <button class="signout-btn" onclick="signOut()">Sign Out</button>
+  `;
+  state.prevBadgeCount = earned.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BADGE DETAIL MODAL
+// ═══════════════════════════════════════════════════════════════
+function openBadgeModal(id) {
+  const badge = ACHIEVEMENTS.find(a => a.id === id);
+  if (!badge) return;
+  const earned = getEarnedBadges();
+  const isEarned = !!earned.find(e => e.id === id);
+
+  let reqText = '';
+  if (badge.req.type === 'stars') reqText = `Earn ${badge.req.n} star${badge.req.n > 1 ? 's' : ''}`;
+  else if (badge.req.type === 'continents') reqText = `Check in on all 6 major continents`;
+
+  document.getElementById('badge-detail-body').innerHTML = `
+    <div class="badge-detail-icon" style="opacity:${isEarned ? 1 : 0.3}">${badge.icon}</div>
+    <div class="badge-detail-name">${badge.name}</div>
+    <div class="badge-detail-req">${isEarned ? '✅ Earned!' : `🔒 ${reqText}`}</div>
+    <div class="badge-detail-desc">${badge.desc}</div>
+  `;
+  document.getElementById('badge-modal').classList.add('visible');
+}
+
+function closeBadgeModal() {
+  document.getElementById('badge-modal').classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+function openAuth(tab) {
+  switchAuthTab(tab || 'signin');
+  document.getElementById('auth-modal').classList.add('visible');
+}
+
+function closeAuth() {
+  document.getElementById('auth-modal').classList.remove('visible');
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-create').classList.toggle('active', tab === 'create');
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'flex' : 'none';
+  document.getElementById('create-form').style.display = tab === 'create' ? 'flex' : 'none';
+}
+
+function handleSignIn(e) {
+  e.preventDefault();
+  const email = document.getElementById('si-email').value.trim();
+  const pass = document.getElementById('si-pass').value;
+  const err = document.getElementById('si-error');
+
+  // Load from localStorage
+  try {
+    const accounts = JSON.parse(localStorage.getItem('on_location_accounts') || '{}');
+    if (accounts[email] && accounts[email].password === btoa(pass)) {
+      const acct = accounts[email];
+      state.user = {
+        name: acct.name,
+        email: acct.email,
+        stars: acct.stars || 0,
+        checkedIn: acct.checkedIn || [],
+        continents: acct.continents || []
+      };
+      saveState();
+      closeAuth();
+      updateHeader();
+      err.classList.remove('visible');
+      return;
+    }
+  } catch(ex) {}
+  err.classList.add('visible');
+}
+
+function handleCreateAccount(e) {
+  e.preventDefault();
+  const name = document.getElementById('ca-name').value.trim();
+  const email = document.getElementById('ca-email').value.trim();
+  const pass = document.getElementById('ca-pass').value;
+  const card = document.getElementById('ca-card').value.replace(/\s/g,'');
+  const err = document.getElementById('ca-error');
+  const btn = document.getElementById('ca-submit');
+
+  if (card.length < 13) { err.textContent = 'Please enter a valid card number.'; err.classList.add('visible'); return; }
+
+  btn.textContent = 'Processing…';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const newUser = { name, email, password: btoa(pass), stars: 0, checkedIn: [], continents: [] };
+    try {
+      const accounts = JSON.parse(localStorage.getItem('on_location_accounts') || '{}');
+      accounts[email] = newUser;
+      localStorage.setItem('on_location_accounts', JSON.stringify(accounts));
+    } catch(ex) {}
+
+    state.user = { name, email, stars: 0, checkedIn: [], continents: [] };
+    saveState();
+    closeAuth();
+    updateHeader();
+    btn.textContent = 'Pay $2.99 & Create Account';
+    btn.disabled = false;
+    err.classList.remove('visible');
+  }, 1800);
+}
+
+function signOut() {
+  state.user = null;
+  saveState();
+  closeProfile();
+  updateHeader();
+  refreshMarkers();
+}
+
+function handleUserBtn() {
+  if (state.user) {
+    openProfile();
+  } else {
+    openAuth('signin');
+  }
+}
+
+function updateHeader() {
+  const btn = document.getElementById('user-btn');
+  if (state.user) {
+    btn.textContent = state.user.name.split(' ')[0];
+    btn.classList.add('logged-in');
+    btn.onclick = openProfile;
+  } else {
+    btn.textContent = 'Sign In';
+    btn.classList.remove('logged-in');
+    btn.onclick = handleUserBtn;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CARD INPUT FORMATTING
+// ═══════════════════════════════════════════════════════════════
+function initCardFormatting() {
+  const cardInput = document.getElementById('ca-card');
+  cardInput.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g,'').slice(0,16);
+    e.target.value = v.replace(/(\d{4})(?=\d)/g,'$1 ');
+  });
+  const expInput = document.getElementById('ca-exp');
+  expInput.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g,'').slice(0,4);
+    if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+    e.target.value = v;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  initMap();
+  initSearch();
+  initCardFormatting();
+  updateHeader();
+
+  if (state.user) {
+    state.prevBadgeCount = getEarnedBadges().length;
+  }
+
+  // Close profile drawer when clicking map
+  document.getElementById('map').addEventListener('click', () => {
+    if (document.getElementById('profile-drawer').classList.contains('open')) {
+      closeProfile();
+    }
+  });
+});
+</script>
+</body>
+</html>
