@@ -443,6 +443,133 @@
     .hidden { display: none !important; }
     .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
+    /* ── SPLASH SCREEN ── */
+    #splash {
+      position: fixed; inset: 0; z-index: 2000;
+      background: #06060d;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 48px 24px 80px; text-align: center; overflow: hidden;
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    #splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+    #splash::after {
+      content: ''; position: absolute;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(245,166,35,0.07) 0%, transparent 65%);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .splash-strip {
+      position: absolute; left: 0; right: 0; height: 44px; overflow: hidden;
+      display: flex;
+    }
+    .splash-strip.top { top: 0; }
+    .splash-strip.bottom { bottom: 0; }
+    .splash-strip-frame {
+      flex-shrink: 0; width: 32px; height: 100%;
+      background: #111; border-right: 3px solid #000;
+      display: flex; flex-direction: column; justify-content: space-between; padding: 5px 4px;
+    }
+    .splash-strip-hole {
+      width: 100%; height: 10px; border-radius: 2px; background: #06060d;
+    }
+    .splash-strip-mid {
+      flex: 1; background: #0a0a0a; border-top: 3px solid #000; border-bottom: 3px solid #000;
+    }
+
+    @keyframes splash-in { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .splash-el { animation: splash-in 0.5s ease both; }
+    .splash-el:nth-child(1) { animation-delay: 0.1s; }
+    .splash-el:nth-child(2) { animation-delay: 0.2s; }
+    .splash-el:nth-child(3) { animation-delay: 0.3s; }
+    .splash-el:nth-child(4) { animation-delay: 0.4s; }
+    .splash-el:nth-child(5) { animation-delay: 0.55s; }
+    .splash-el:nth-child(6) { animation-delay: 0.7s; }
+    .splash-el:nth-child(7) { animation-delay: 0.82s; }
+
+    .splash-icon { font-size: 52px; margin-bottom: 14px; line-height: 1; }
+    .splash-title {
+      font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 44px;
+      letter-spacing: -2px; color: #fff; line-height: 1; margin-bottom: 6px;
+    }
+    .splash-title span { color: var(--gold); }
+    .splash-tagline {
+      font-size: 11px; color: var(--text3); letter-spacing: 0.18em;
+      text-transform: uppercase; margin-bottom: 20px;
+    }
+    .splash-desc {
+      font-size: 15px; color: var(--text2); max-width: 360px;
+      line-height: 1.65; margin-bottom: 28px;
+    }
+    .splash-stats { display: flex; gap: 8px; margin-bottom: 36px; flex-wrap: wrap; justify-content: center; }
+    .splash-stat {
+      padding: 7px 15px; border-radius: 20px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border2);
+      font-size: 12px; font-weight: 600; color: var(--text2);
+    }
+    .splash-stat strong { color: var(--gold); }
+
+    .splash-cta {
+      height: 54px; padding: 0 40px; border-radius: 27px; border: none;
+      background: var(--gold); color: #000;
+      font-size: 16px; font-weight: 800; font-family: 'Montserrat', sans-serif;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+      transition: all 0.2s ease;
+      animation: cta-glow 2.5s 1.2s infinite;
+    }
+    .splash-cta:hover { transform: scale(1.04); background: #f0b84a; }
+    @keyframes cta-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0.5); }
+      50% { box-shadow: 0 0 0 14px rgba(245,166,35,0); }
+    }
+    .splash-note { margin-top: 16px; font-size: 12px; color: var(--text3); }
+    .splash-note a { color: var(--text2); text-decoration: underline; cursor: pointer; }
+
+    /* ── FEATURED CARD ── */
+    #featured-card {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(90px);
+      z-index: 800; width: 320px; max-width: calc(100vw - 100px);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); cursor: pointer;
+      opacity: 0;
+      transition: transform 0.55s cubic-bezier(0.34,1.15,0.64,1), opacity 0.4s ease, border-color 0.2s ease;
+    }
+    #featured-card.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #featured-card:hover { border-color: var(--border2); }
+    .fc-inner { display: flex; align-items: center; gap: 12px; padding: 10px 36px 10px 12px; }
+    .fc-thumb {
+      width: 52px; height: 52px; border-radius: 8px;
+      object-fit: cover; background: var(--card2); flex-shrink: 0;
+    }
+    .fc-info { flex: 1; min-width: 0; }
+    .fc-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); font-weight: 700; margin-bottom: 3px; }
+    .fc-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-sub { font-size: 11px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-arrow { color: var(--text3); font-size: 14px; flex-shrink: 0; }
+    .fc-dismiss {
+      position: absolute; top: 8px; right: 8px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--card2); border: none; color: var(--text3);
+      font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .fc-dismiss:hover { background: var(--border); color: var(--text); }
+
+    /* ── MARKER PULSE ── */
+    .loc-marker { position: relative; overflow: visible !important; }
+    @keyframes marker-pulse {
+      0% { transform: scale(1); opacity: 0.55; }
+      100% { transform: scale(3.2); opacity: 0; }
+    }
+    .marker-ring {
+      position: absolute; inset: -2px; border-radius: 50%;
+      animation: marker-pulse 2.8s ease-out infinite;
+      pointer-events: none;
+    }
+
     /* ── HELP OVERLAY ── */
     #help-modal .modal-overlay-inner {
       position: fixed; inset: 0; z-index: 1100;
@@ -506,6 +633,67 @@
   </style>
 </head>
 <body>
+
+<!-- ─── SPLASH ─── -->
+<div id="splash">
+  <div class="splash-strip top">
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+  </div>
+
+  <div class="splash-el splash-icon">🎬</div>
+  <div class="splash-el splash-title">On <span>Location</span></div>
+  <div class="splash-el splash-tagline">Every set &nbsp;·&nbsp; Every scene &nbsp;·&nbsp; Every location</div>
+  <p class="splash-el splash-desc">Explore verified filming locations from your favorite films &amp; TV shows — plotted on an interactive world map.</p>
+  <div class="splash-el splash-stats">
+    <div class="splash-stat"><strong>22</strong> Locations</div>
+    <div class="splash-stat"><strong>6</strong> Continents</div>
+    <div class="splash-stat">✅ IMDb Verified</div>
+  </div>
+  <button class="splash-el splash-cta" onclick="dismissSplash()">Start Exploring &nbsp;→</button>
+  <p class="splash-el splash-note">Browse for free &nbsp;·&nbsp; <a onclick="dismissSplash();setTimeout(()=>openAuth('create'),400)">$2.99 to check in &amp; earn badges</a></p>
+
+  <div class="splash-strip bottom">
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+    <div class="splash-strip-mid"></div>
+    <div class="splash-strip-frame"><div class="splash-strip-hole"></div><div class="splash-strip-hole"></div></div>
+  </div>
+</div>
+
+<!-- ─── FEATURED CARD ─── -->
+<div id="featured-card" onclick="openFeaturedLocation()">
+  <button class="fc-dismiss" onclick="dismissFeatured(event)">✕</button>
+  <div class="fc-inner">
+    <img class="fc-thumb" id="fc-thumb" src="" alt="">
+    <div class="fc-info">
+      <div class="fc-label">⭐ Location of the Day</div>
+      <div class="fc-title" id="fc-title"></div>
+      <div class="fc-sub" id="fc-sub"></div>
+    </div>
+    <div class="fc-arrow">→</div>
+  </div>
+</div>
 
 <!-- ─── HEADER ─── -->
 <header id="header">
@@ -1255,10 +1443,15 @@ function markerColor(loc) {
 function addMarker(loc) {
   const color = markerColor(loc);
   const emoji = categoryEmoji(loc.category);
+  const idx = LOCATIONS.indexOf(loc);
+  const delay = ((idx * 0.18) % 2.8).toFixed(2);
 
   const icon = L.divIcon({
     className: '',
-    html: `<div class="loc-marker ${hasCheckedIn(loc.id) ? 'checked-in' : ''}" style="background:${color}" data-id="${loc.id}">${emoji}</div>`,
+    html: `<div class="loc-marker ${hasCheckedIn(loc.id) ? 'checked-in' : ''}" style="background:${color}" data-id="${loc.id}">
+      <div class="marker-ring" style="background:${color};animation-delay:${delay}s"></div>
+      ${emoji}
+    </div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14]
   });
@@ -1718,6 +1911,75 @@ function updateHeader() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SPLASH
+// ═══════════════════════════════════════════════════════════════
+function initSplash() {
+  if (localStorage.getItem('on_location_visited')) {
+    document.getElementById('splash').remove();
+    initFeaturedCard();
+  }
+  // else splash stays visible until dismissSplash()
+}
+
+function dismissSplash() {
+  localStorage.setItem('on_location_visited', '1');
+  const splash = document.getElementById('splash');
+  splash.classList.add('out');
+  setTimeout(() => { try { splash.remove(); } catch(e){} }, 700);
+  setTimeout(() => initFeaturedCard(), 900);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURED CARD
+// ═══════════════════════════════════════════════════════════════
+function initFeaturedCard() {
+  const day = Math.floor(Date.now() / 86400000) % LOCATIONS.length;
+  const loc = LOCATIONS[day];
+  const card = document.getElementById('featured-card');
+  document.getElementById('fc-thumb').src = `https://picsum.photos/seed/${loc.photos[0]}/100/100`;
+  document.getElementById('fc-title').textContent = loc.title;
+  document.getElementById('fc-sub').textContent = `${loc.movie} · ${loc.checkins.toLocaleString()} check-ins`;
+  card._locId = loc.id;
+  requestAnimationFrame(() => setTimeout(() => card.classList.add('visible'), 80));
+}
+
+function openFeaturedLocation() {
+  const card = document.getElementById('featured-card');
+  if (card && card._locId) openLocationModal(card._locId);
+}
+
+function dismissFeatured(e) {
+  e.stopPropagation();
+  const card = document.getElementById('featured-card');
+  card.style.transform = 'translateX(-50%) translateY(100px)';
+  card.style.opacity = '0';
+  setTimeout(() => { try { card.remove(); } catch(e){} }, 420);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATED SEARCH PLACEHOLDER
+// ═══════════════════════════════════════════════════════════════
+function initSearchPlaceholder() {
+  const texts = [
+    'Search La La Land…',
+    'Search Game of Thrones…',
+    'Search Harry Potter…',
+    'Search Lord of the Rings…',
+    'Search Inception…',
+    'Search Star Wars…',
+    'Search Indiana Jones…',
+    'Search Gladiator…',
+  ];
+  let i = 0;
+  const input = document.getElementById('search-input');
+  setInterval(() => {
+    if (document.activeElement === input) return;
+    i = (i + 1) % texts.length;
+    input.placeholder = texts[i];
+  }, 3200);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HELP OVERLAY
 // ═══════════════════════════════════════════════════════════════
 function openHelp() {
@@ -1752,14 +2014,15 @@ document.addEventListener('DOMContentLoaded', () => {
   loadState();
   initMap();
   initSearch();
+  initSearchPlaceholder();
   initCardFormatting();
+  initSplash();
   updateHeader();
 
   if (state.user) {
     state.prevBadgeCount = getEarnedBadges().length;
   }
 
-  // Close profile drawer when clicking map
   document.getElementById('map').addEventListener('click', () => {
     if (document.getElementById('profile-drawer').classList.contains('open')) {
       closeProfile();
